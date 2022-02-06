@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Mantle Finance - Ethereum</title>
+	<script type="text/javascript" src="scripts/jquery-3.1.1.min.js"></script>
+
+
+	<script type="text/javascript" src="scripts/nftfi_abi.js"></script>
+	<script type="text/javascript" src="scripts/nft_abi.js"></script>
+	<script type="text/javascript" src="scripts/erc20_abi.js"></script>
+
+
+	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.5.2/web3.min.js"
+		integrity="sha512-mYc+D+NmmyR0Gcrzyae7q5HguBCS4cBHAsIk7gGhu0/ZyGg4z2YZDjyR2YQA/IMCMTNs4mnlw3vVdERzewpekQ=="
+		crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+
+<body ng-app="myApp" ng-controller="myCtrl" style="background-color: rgba(17,24,39,var(--tw-bg-opacity)); ">
+	<div
+		style="width: 100%; height: 100%; position: fixed; background: url(./images/background.png) no-repeat; background-size: cover; background-position: 20%; z-index: -999;">
+	</div>
+	<div id="wrapper">
+		<div>
+			<p>測試前，請將 Metamask 錢包切換至 Rinkeby 網路。</p>
+			<p>此範例中，Lender 與 Borrower 為同一人</p>
+			<br/>
+			<br/>
+
+			<p>My Address: {{address}}</p>
+			<p>NFTfi Address: {{LendingPlaceContract_rinkeby}}</p>
+			<p>WETH Address: {{WETHContract_rinkeby}}</p>
+			<p>Testing NFTs Address: {{NFT_Contract_rinkeby}}</p>
+			<p>第幾號 NFT 要拿上來質押：{{NFT_Collateral_Id}}</p>
+			<p>Chain ID: {{chainId}}</p>
+			<p>Total Number of Loans: {{totalNumLoans}}</p>
+			<p>Total Active of Loans: {{totalActiveLoans}}</p>
+			
+			<hr>
+			<h1>第一階段</h1>
+			<h2>Borrower 操作部分</h2>
+			<p>NFT 權限開通部分（每個人的每個 NFT 計畫都要對 NFTfi 做一次）</p>
+			<p>偵測 NFT 合約 <input ng-value="NFT_Contract_rinkeby" /> 有沒有對 NFTfi 合約開通權限 <button type="button" ng-click="isApprovedForAll()">Query From NFT Contract</button></p>
+			<p>同意 NFT 合約 <input ng-value="NFT_Contract_rinkeby" /> 所有 NFTs 都可以被 NFTfi 合約轉移：<button type="button" ng-click="setApprovalForAll()">Set to NFT Contract</button></p>
+
+			<hr>
+			<p>協議 Borrower 授權的部分，Borrower 線下簽名，授權某 NFT 可以被借出去</p>
+			<p>簽發第 <input ng-value="NFT_Collateral_Id" /> 號 NFT，允許 NFTfi 可以移動此 NFT 的權利：<button type="button" ng-click="BorrowerSign()">Submit</button>。簽發完結果 <input ng-value="BorrowerSign_Result" /></p>
+			<p>值會存再後端，待 Borrower 第二階段要簽發時，會一並帶入</p>
+			<hr>
+			<br/>
+			<br/>
+			<hr>
+			<h2>Lender 操作部分</h2>
+			<p>WETH - ERC20 權限開通部分（每個人的地址都要對 WETH 合約做一次）</p>
+			<p>偵測 WETH 合約 <input ng-value="WETHContract_rinkeby" /> 有沒有對 NFTfi 合約授權可轉移代幣 <button type="button" ng-click="queryAllowanceAmount()">Query From ERC20 Contract</button></p>
+			<p>同意 WETH 合約 <input ng-value="WETHContract_rinkeby" /> 可以被 NFTfi 合約轉移無限量 (2^256 - 1) 代幣：<button type="button" ng-click="approveAllowanceAmount()">Approve to ERC20 Contract</button></p>
+			<hr>
+			<p>協議 Lender 授權的部分，Lender 線下簽名，授權預借出 WETH(ERC20) 代幣予某特定 NFT </p>
+			<p>簽發特定金額、利息與償還規則，第 <input ng-value="NFT_Collateral_Id" /> 號 NFT，允許 NFTfi 進行扣款：<button type="button" ng-click="LenderSign()">Submit</button>。簽發完結果 <input ng-value="LenderSign_Result" /></p>
+			<p>值會存再後端，待 Borrower 第二階段要簽發時，會一並帶入</p>
+			<hr>
+			<br/>
+			<br/>
+			<hr>
+			<h1>第二階段</h1>
+			<h2>Borrower 操作部分</h2>
+			<p>Borrower 同意某 Lender 的 Offer，Borrower 將雙方的線下簽名"同步"送出至 NFTfi 進行操作</p>
+			<button type="button" ng-click="beginLoan()">Submit</button>
+			<p>*在此步驟中，NFTFi 合約如果驗證帶入的值沒有問題，就會至 NFT 合約要求轉移 1 號NFT 並進行轉移與鎖定，也會轉移 Lender 的 WETH 至 Borrower 地址中。</p>
+		</div>
+	</div>
+
+	<script>
+		var app = angular.module("myApp", []);
+		var delay = 0;
+		app.controller("myCtrl", function ($scope) {
+
+			//WETH: 0xc778417E063141139Fce010982780140Aa0cD5Ab
+			var WETHContract_rinkeby = "0xc778417E063141139Fce010982780140Aa0cD5Ab";
+
+			//NFTfi 合約地址: 0xF2eDd321D7346d30076527EDa3A82F4Cb272570e
+			var LendingPlaceContract_rinkeby = "0xF2eDd321D7346d30076527EDa3A82F4Cb272570e";
+
+			//測試 NFT 計畫的地址: 0xcC14dd8E6673fEE203366115D3f9240b079a4930
+			var NFT_Contract_rinkeby = "0xcC14dd8E6673fEE203366115D3f9240b079a4930";
+
+			//第幾號 NFT 要拿上來質押？
+			var NFT_Collateral_Id = 1;
+
+			var chainId = 4;
+
+			//--------------------
+
+
+			if (typeof ethereum !== "undefined") ethereum.enable();
+
+			const web3 = new Web3(Web3.givenProvider || "https://mainnet.infura.io/v3/bbec5953f6a54a9c865346ee4e58d192");
+
+			var LendingPlaceContract = new web3.eth.Contract(LendingPlaceContract_abi, LendingPlaceContract_rinkeby, {
+
+			});
+
+			var NFT_Contract = new web3.eth.Contract(NFT_Contract_abi, NFT_Contract_rinkeby, {
+
+			});
+
+			var WETH_Contract = new web3.eth.Contract(ERC20_Contract_abi, WETHContract_rinkeby, {
+
+			});
+
+			setInterval(function () {
+				web3.eth.getCoinbase().then(function (_address) {
+					$scope.address = _address;
+					$scope.WETHContract_rinkeby = WETHContract_rinkeby;
+					$scope.LendingPlaceContract_rinkeby = LendingPlaceContract_rinkeby;
+					$scope.NFT_Contract_rinkeby = NFT_Contract_rinkeby;
+					$scope.NFT_Collateral_Id = NFT_Collateral_Id;
+					$scope.chainId = chainId;
+
+					LendingPlaceContract.methods.totalNumLoans().call({}, function (error, result) {
+						$scope.totalNumLoans = result;
+						$scope.$apply();
+					});
+
+
+					LendingPlaceContract.methods.totalActiveLoans().call({}, function (error, result) {
+						$scope.totalActiveLoans = result;
+						$scope.$apply();
+					});
+
+				});
+			}, 2000);
+
+
+			// pixelnftContract.methods.batch100colorOfwtihId(r).call({}, function (error, result) {
+	
+
+			// });
+
+			//確認檢查：
+			//變數帶入：我, NFTfi 地址
+			$scope.isApprovedForAll = function (){
+				NFT_Contract.methods.isApprovedForAll($scope.address, LendingPlaceContract_rinkeby).call({}, function (error, result) {
+					alert(result);
+				});
+			}
+
+			$scope.setApprovalForAll = function () {
+				NFT_Contract.methods.setApprovalForAll(LendingPlaceContract_rinkeby, true).send({ from: $scope.address }, function (error, transactionHash) {
+				
+				});
+			};
+
+			//_nftCollateralId, _borrowerNonce, _nftCollateralContract, _borrower, chainId
+			$scope.BorrowerSign = function () {
+				let Sig = web3.eth.sign(web3.utils.keccak256($scope.NFT_Collateral_Id + 0 + $scope.NFT_Contract_rinkeby + $scope.address + $scope.chainId), $scope.address).then(function(a){
+					console.log(a);
+					alert(a);
+					$scope.BorrowerSign_Result = a;
+				});
+			}
+
+			$scope.queryAllowanceAmount = function () {
+				WETH_Contract.methods.allowance($scope.address, LendingPlaceContract_rinkeby).call({}, function (error, result) {
+					alert(result);
+				});
+			}
+
+			$scope.approveAllowanceAmount = function () {
+				WETH_Contract.methods.approve(LendingPlaceContract_rinkeby, "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff").send({ from: $scope.address }, function (error, transactionHash) {
+				
+				});
+			}
+
+			//_loanPrincipalAmount: 需要注意單位，因此使用 toWei
+			//_maximumRepaymentAmount
+			//_nftCollateralId
+			//_loanDuration: 使用秒來計算單位
+			//_loanInterestRateForDurationInBasisPoints
+			//_adminFeeInBasisPoints
+			//_lenderNonce
+			//_nftCollateralContract
+			//_loanERC20Denomination
+			//_lender
+			//_interestIsProRated: true or false
+			
+			$scope.LenderSign = function () {
+				let Sig = web3.eth.sign(web3.utils.keccak256(web3.utils.toWei('1', 'ether') + web3.utils.toWei('0.05', 'ether') + $scope.NFT_Collateral_Id + (60*60*24) + 5 + 5 + 0 + $scope.NFT_Contract_rinkeby + $scope.WETHContract_rinkeby + $scope.address + true + $scope.chainId), $scope.address).then(function(a){
+					console.log(a);
+					alert(a);
+					$scope.LenderSign_Result = a;
+				});
+			}
+
+
+			//uint256 _loanPrincipalAmount,
+        	//uint256 _maximumRepaymentAmount,
+        	//uint256 _nftCollateralId,
+        	//uint256 _loanDuration,
+        	//uint256 _loanInterestRateForDurationInBasisPoints,
+        	//uint256 _adminFeeInBasisPoints,
+        	//uint256[2] memory _borrowerAndLenderNonces,
+        	//address _nftCollateralContract,
+        	//address _loanERC20Denomination,
+        	//address _lender,
+        	//bytes memory _borrowerSignature,
+        	//bytes memory _lenderSignature
+
+			$scope.beginLoan = function () {
+				LendingPlaceContract.methods.beginLoan(web3.utils.toWei('1', 'ether'), web3.utils.toWei('0.05', 'ether'), $scope.NFT_Collateral_Id, (60*60*24), 5, 5, [0,0], $scope.NFT_Contract_rinkeby, $scope.WETHContract_rinkeby, $scope.address, $scope.BorrowerSign_Result, $scope.LenderSign_Result).send({ from: $scope.address }, function (error, transactionHash) {
+				
+				});
+			}
+
+		});
+	</script>
+</body>
+
+</html>
