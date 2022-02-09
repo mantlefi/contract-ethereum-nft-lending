@@ -199,7 +199,7 @@
 			//_interestIsProRated: true or false
 
 			$scope.LenderSign = function () {
-				const keccak = web3.utils.soliditySha3({ t: 'uint256', v: web3.utils.toWei('1', 'ether') }, { t: 'uint256', v: web3.utils.toWei('1.05', 'ether') }, { t: 'uint', v: $scope.NFT_Collateral_Id }, { t: 'uint256', v: (60 * 60 * 24) }, { t: 'uint256', v: 5 }, { t: 'uint256', v: 25 }, { t: 'uint256', v: lender_nonce }, { t: 'address', v: $scope.NFT_Contract_rinkeby }, { t: 'address', v: $scope.WETHContract_rinkeby }, { t: 'address', v: $scope.address }, { t: 'bool', v: true }, { t: "uint256", v: 4 } )
+				const keccak = web3.utils.soliditySha3({ t: 'uint256', v: web3.utils.toWei('1', 'ether') }, { t: 'uint256', v: web3.utils.toWei('1.05', 'ether') }, { t: 'uint', v: $scope.NFT_Collateral_Id }, { t: 'uint256', v: (60 * 60 * 24) }, { t: 'uint256', v: 4294967295 }, { t: 'uint256', v: 25 }, { t: 'uint256', v: lender_nonce }, { t: 'address', v: $scope.NFT_Contract_rinkeby }, { t: 'address', v: $scope.WETHContract_rinkeby }, { t: 'address', v: $scope.address }, { t: 'bool', v: true }, { t: "uint256", v: 4 } )
 
 				let Sig = web3.eth.personal.sign(keccak, $scope.address).then(function (a) {
 					console.log(a);
