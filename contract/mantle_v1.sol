@@ -1,5 +1,21 @@
 pragma solidity ^0.8.0;
 
+//Mantle Finance - https://mantlefi.com/
+//
+//                      ooO
+//                     ooOOOo
+//                   oOOOOOOoooo
+//                 ooOOOooo  oooo
+//                /vvv V\
+//               /V V   V\ 
+//              /V  V    V\          
+//             /           \          ALL HAIL LIQUIDITY!!!!!
+//            /             \               /
+//           /               \   	 o          o
+//          /                 \     /-   o     /-
+//  /\     /                   \   /\  -/-    /\
+//                                     /\
+
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -164,7 +180,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         _nonceOfSigning[msg.sender][_borrowerAndLenderNonces[0]] = true;
         _nonceOfSigning[_lender][_borrowerAndLenderNonces[1]] = true;
 
-        //簽發 Mantle Fianance 的抵押品收據
+        //Mint Mantle Fianance 的 Promissory Note ，Lender 需要特別留意此方法，因為待後面清算與還款時，都是按照此 PS 的所有人來決定收款對象。
         _mint(_lender, loan.loanId);
         
         emit LoanStarted(
@@ -200,7 +216,8 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         IERC20(loan.nftCollateralContractAndloanERC20[1]).transferFrom(loan.borrower, lender, payoffAmount);
         IERC20(loan.nftCollateralContractAndloanERC20[1]).transferFrom(loan.borrower, owner(), adminFee);
 
-         _burn(_loanId);
+        //將 Mantle Finance Promissory Note 收據燃燒
+        _burn(_loanId);
 
         require(_transferNftToAddress(
             loan.nftCollateralContractAndloanERC20[0],
@@ -235,7 +252,8 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
 
         address lender = ownerOf(_loanId);
 
-         _burn(_loanId);
+        //將 Mantle Finance Promissory Note 收據燃燒
+        _burn(_loanId);
 
         require(_transferNftToAddress(
             loan.nftCollateralContractAndloanERC20[0],
