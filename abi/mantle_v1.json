@@ -252,9 +252,9 @@
 			},
 			{
 				"indexed": false,
-				"internalType": "uint256",
-				"name": "loanPrincipalAmount",
-				"type": "uint256"
+				"internalType": "uint256[2]",
+				"name": "loanPrincipalAmountAndRepaymentAmount",
+				"type": "uint256[2]"
 			},
 			{
 				"indexed": false,
@@ -264,27 +264,15 @@
 			},
 			{
 				"indexed": false,
-				"internalType": "uint256",
-				"name": "amountPaidToLender",
-				"type": "uint256"
+				"internalType": "uint256[3]",
+				"name": "amountPaidToLenderAndAdminFeeAndRoyaltyFee",
+				"type": "uint256[3]"
 			},
 			{
 				"indexed": false,
-				"internalType": "uint256",
-				"name": "adminFee",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "nftCollateralContract",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "loanERC20Denomination",
-				"type": "address"
+				"internalType": "address[2]",
+				"name": "nftCollateralContractAndloanERC20Denomination",
+				"type": "address[2]"
 			}
 		],
 		"name": "LoanRepaid",

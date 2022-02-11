@@ -1,4 +1,5 @@
 pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
 
 //Mantle Finance - https://mantlefi.com/
 //
@@ -86,12 +87,10 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         uint256 loanId,
         address borrower,
         address lender,
-        uint256 loanPrincipalAmount,
+        uint256[2] loanPrincipalAmountAndRepaymentAmount,
         uint256 nftCollateralId,
-        uint256 amountPaidToLender,
-        uint256 adminFee,
-        address nftCollateralContract,
-        address loanERC20Denomination
+        uint256[3] amountPaidToLenderAndAdminFeeAndRoyaltyFee,
+        address[2] nftCollateralContractAndloanERC20Denomination
     );
 
     event LoanLiquidated(
@@ -262,12 +261,10 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
             _loanId,
             loan.borrower,
             lender,
-            loan.loanPrincipalAmount,
+            [loan.loanPrincipalAmount,loan.repaymentAmount],
             loan.nftCollateralId,
-            payoffAmount,
-            adminFee,
-            loan.nftCollateralContractAndloanERC20[0],
-            loan.nftCollateralContractAndloanERC20[1]
+            [payoffAmount,adminFee,royaltyFeeAmount],
+            [loan.nftCollateralContractAndloanERC20[0],loan.nftCollateralContractAndloanERC20[1]]
         );
 
         delete loanIdToLoan[_loanId];
