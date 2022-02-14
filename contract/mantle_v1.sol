@@ -46,8 +46,8 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     }
 
     //Whitelist of NFT projects and ERC-20 
-    mapping (address => bool) public whitelistForLendERC20;
-    mapping (address => bool) public whitelistForAllowNFT;
+    mapping (address => bool) public whitelistForAllowedERC20;
+    mapping (address => bool) public whitelistForAllowedNFT;
 
     //The current total loan and the ongoing loans in the protocol
     uint256 public totalNumLoans = 0;
@@ -158,18 +158,18 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     ) public whenNotPaused nonReentrant {
 
         //Whitelist check
-        require(whitelistForAllowNFT[_contract[0]], 'This NFT project is currently not in the ERC-721 whitelist supported by Mantle'); 
-        require(whitelistForLendERC20[_contract[1]], 'This ERC-20 token is currently not on the ERC-20 whitelist supported by Mantle');
+        require(whitelistForAllowedNFT[_contract[0]], 'This NFT project is currently not on the ERC-721 whitelist'); 
+        require(whitelistForAllowedERC20[_contract[1]], 'This ERC-20 token is currently not on the ERC-20 whitelist');
 
         //Lending logic check
         require(maximumLoanDuration >= _loanDuration, 'The loan period must shorter than the protocol limit');
         require(_repaymentAmount >= _loanPrincipalAmount, 'Protocol not to accept negative interest rate loan cases');
-        require(_loanDuration != 0, 'Loan duration needs to be set');
+        require(_loanDuration >= 0, 'Loan duration needs to be set');
         require(_adminFee == adminFee, 'The admin fee for signature authorization is different from the preset, and Lender needs to sign again');
 
         //Nonce check
-        require(_nonceOfSigning[msg.sender][_borrowerAndLenderNonces[0]] == false, 'Borrowers Nonce has been used, the order has been established, or Borrower has cancelled the Offer');
-        require(_nonceOfSigning[_lender][_borrowerAndLenderNonces[1]] == false, 'Lenders Nonce has been used, the order has been established, or Lender has cancelled the listing');
+        require(_nonceOfSigning[msg.sender][_borrowerAndLenderNonces[0]] == false, 'Borrowers Nonce has been used. The order has been established, or Borrower has cancelled the Offer');
+        require(_nonceOfSigning[_lender][_borrowerAndLenderNonces[1]] == false, 'Lenders Nonce has been used. The order has been established, or Lender has cancelled the listing');
 
         Loan memory loan = Loan({
             loanId: totalNumLoans, //currentLoanId,
@@ -346,11 +346,11 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     //Admin
 
     function setWhitelistERC20(address _erc20, bool _bool) external onlyOwner {
-        whitelistForLendERC20[_erc20] = _bool;
+        whitelistForAllowedERC20[_erc20] = _bool;
     }
 
     function setWhitelistNFTContract(address _erc721, bool _bool) external onlyOwner {
-        whitelistForAllowNFT[_erc721] = _bool;
+        whitelistForAllowedNFT[_erc721] = _bool;
     }
 
     function updateMaximumLoanDuration(uint256 _newMaximumLoanDuration) external onlyOwner {
