@@ -41,7 +41,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
 
     //This contract complies with the ERC-721 standard, and Lender will get a Promissory Note NFT on each Loan begin. 
     //This NFT is also destroyed during repayment and liquidation.
-    //Note that transferring this PN means transferring the right to 清算與收款
+    //Note that transferring this PN means that you no longer have the rights to liquidate and repay.
     constructor() ERC721("Mantle Fianace Promissory Note", "Mantle PN") {
     }
 
@@ -49,29 +49,29 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     mapping (address => bool) public whitelistForLendERC20;
     mapping (address => bool) public whitelistForAllowNFT;
 
-    //The current total loan the ongoing loans in the protocol and
+    //The current total loan and the ongoing loans in the protocol
     uint256 public totalNumLoans = 0;
     uint256 public totalActiveLoans = 0;
 
-    //協議中真實存放 Loan 的地方，注意我們將清算選項，因為 loanIdToLoan 將會於還款與清算時，一並刪除減少 Gas 費用
+    //This is where the loans are actually stored in the protocol.
+    //Note that we separate whether the liquidation or repayment have been done. 
+    //The content of loanIdToLoan will be deleted during repayment and liquidation.
     mapping (uint256 => Loan) public loanIdToLoan;
     mapping (uint256 => bool) public loanRepaidOrLiquidated;
 
-    //協議中的 Royalty Fee 管理者，此寫法參考 looksrare.org 的架構
+    //Royalty Fee Manager, refers to the structure of https://looksrare.org/
     IRoyaltyFeeManager public royaltyFeeManager;
 
-    //協議中的收取的費用，注意：費用皆於還款時向 Lender 收取。 (25 = 0.25%, 100 = 1%)
-    uint256 public adminFeeInBasisPoints = 25;
+    //The fees charged in the protocol, note: the fees are charged to Lender at the time of repayment. (25 = 0.25%, 100 = 1%)
+    uint256 public adminFee = 25;
 
-    //驗證 off-chain 簽名的授權，無論是 Borrower or Lender 皆使用此 Mapping 參數。
-    //使用 Nonce 的時機，
+    //The protocol uses its own Nonce to maintain security, avoid duplication of signatures and reduce gas costs
     mapping (address => mapping (uint256 => bool)) private _nonceOfSigning;
 
-    //其餘參數
+    //other parameters
     uint256 public maximumLoanDuration = 53 weeks;
     uint256 public maximumNumberOfActiveLoans = 100;
 
-    //loan 最基礎的架構
     struct Loan {
         uint256 loanId;
         uint256 loanPrincipalAmount;
@@ -79,7 +79,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         uint256 nftCollateralId;
         uint64 loanStartTime;
         uint32 loanDuration;
-        uint32 loanAdminFeeInBasisPoints;
+        uint32 loanAdminFee;
         address[2] nftCollateralContractAndloanERC20;
         address borrower;
     }
@@ -141,14 +141,14 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         uint256 amount
     );
 
-    //邏輯開始
+    //logical start
    
     function beginLoan(
         uint256 _loanPrincipalAmount,
         uint256 _repaymentAmount,
         uint256 _nftCollateralId,
         uint256 _loanDuration,
-        uint256 _adminFeeInBasisPoints,
+        uint256 _adminFee,
         uint256[2] memory _borrowerAndLenderNonces,
         address[2] memory _contract,
         address _lender,
@@ -157,19 +157,19 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         bytes memory _lenderSignature
     ) public whenNotPaused nonReentrant {
 
-        //白名單檢查
-        require(whitelistForAllowNFT[_contract[0]], 'This Nft is not in whitelist'); //這個 NFT 計畫目前沒有在 Mantle 所支援的 ERC 721 白名單中
-        require(whitelistForLendERC20[_contract[1]], 'This erc20 is not in whitelist'); //這個 ERC20 代幣目前沒有在 Mantle 所支援的 ERC 20 白名單中
+        //Whitelist check
+        require(whitelistForAllowNFT[_contract[0]], 'This NFT project is currently not in the ERC-721 whitelist supported by Mantle'); 
+        require(whitelistForLendERC20[_contract[1]], 'This ERC-20 token is currently not on the ERC-20 whitelist supported by Mantle');
 
-        //安全性檢查
-        require(maximumLoanDuration >= _loanDuration, '_loanDuration too high'); //貸款期間不得設置超過 Mantle 平台限制的時間
-        require(_repaymentAmount >= _loanPrincipalAmount, '_repaymentAmount too low');  //Mantle 平台不接受負利率的貸款案件
-        require(_loanDuration != 0, '_loanDuration can not be 0'); //需要設置
-        require(_adminFeeInBasisPoints == adminFeeInBasisPoints, '_adminFeeInBasisPoints error'); //簽名授權的 admin fee 與 預設不同，請重新 Sign
+        //Lending logic check
+        require(maximumLoanDuration >= _loanDuration, 'The loan period must shorter than the protocol limit');
+        require(_repaymentAmount >= _loanPrincipalAmount, 'Protocol not to accept negative interest rate loan cases');
+        require(_loanDuration != 0, 'Loan duration needs to be set');
+        require(_adminFee == adminFee, 'The admin fee for signature authorization is different from the preset, and Lender needs to sign again');
 
-        //Nonce 檢查
-        require(_nonceOfSigning[msg.sender][_borrowerAndLenderNonces[0]] == false, 'borrow nonce been used'); //Borrower 的 Nonoce 已經被使用了，有可能是此訂單已經成立，或是 Borrower 取消 Offer
-        require(_nonceOfSigning[_lender][_borrowerAndLenderNonces[1]] == false, 'lender nonce been used'); //Lender 的 Nonoce 已經被使用了，有可能是此訂單已經成立，或是 Lender 取消 Listing
+        //Nonce check
+        require(_nonceOfSigning[msg.sender][_borrowerAndLenderNonces[0]] == false, 'Borrowers Nonce has been used, the order has been established, or Borrower has cancelled the Offer');
+        require(_nonceOfSigning[_lender][_borrowerAndLenderNonces[1]] == false, 'Lenders Nonce has been used, the order has been established, or Lender has cancelled the listing');
 
         Loan memory loan = Loan({
             loanId: totalNumLoans, //currentLoanId,
@@ -178,12 +178,12 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
             nftCollateralId: _nftCollateralId,
             loanStartTime: uint64(block.timestamp), //_loanStartTime
             loanDuration: uint32(_loanDuration),
-            loanAdminFeeInBasisPoints: uint32(_adminFeeInBasisPoints),
+            loanAdminFee: uint32(_adminFee),
             nftCollateralContractAndloanERC20: _contract,
             borrower: msg.sender //borrower
         });
 
-        //檢查 Borrower 的簽名，再次確認他是否要借出此 NFT，並且確認簽名有無過期？
+        //Check Borrower's signature, double-check if borrower wants to lend this NFT, and check if the signature has expired
         require(isValidBorrowerSignature(
             loan.nftCollateralId,
             _borrowerAndLenderNonces[0],//_borrowerNonce,
@@ -193,13 +193,13 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
             _borrowerSignature
         ), 'Borrower signature is invalid');
 
-        //檢查 Lender 的簽名，再次確認他是否有 Offer 此 NFT，並且確認簽名有無過期？
+        //Check Lender's signature, confirm again whether lender has Offer this NFT, and confirm whether the signature has expired
         require(isValidLenderSignature(
             loan.loanPrincipalAmount,
             loan.repaymentAmount,
             loan.nftCollateralId,
             loan.loanDuration,
-            loan.loanAdminFeeInBasisPoints,
+            loan.loanAdminFee,
             _borrowerAndLenderNonces[1],//_lenderNonce,
             loan.nftCollateralContractAndloanERC20,
             _lender,
@@ -207,22 +207,22 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
             _lenderSignature
         ), 'Lender signature is invalid');
 
-        //將 Loan 寫入清單內
+        //Put Loan into the mapping
         loanIdToLoan[totalNumLoans] = loan;
         totalNumLoans = totalNumLoans.add(1);
         totalActiveLoans = totalActiveLoans.add(1);
         require(totalActiveLoans <= maximumNumberOfActiveLoans, 'Contract has reached the maximum number of active loans allowed by admins');
 
-        //轉移借款資金與抵押 NFT 至協議內
+        //Transfer fund and collateralized NFT to the protocol
         IERC721(loan.nftCollateralContractAndloanERC20[0]).transferFrom(msg.sender, address(this), loan.nftCollateralId);
         IERC20(loan.nftCollateralContractAndloanERC20[1]).transferFrom(_lender, msg.sender, loan.loanPrincipalAmount);
 
-        //Borrower and Lender 的 Nonce 列為使用狀態
+        //Set borrower and Lender's Nonce to use state
         _nonceOfSigning[msg.sender][_borrowerAndLenderNonces[0]] = true;
         _nonceOfSigning[_lender][_borrowerAndLenderNonces[1]] = true;
 
         //Mint Mantle Fianance 的 Promissory Note
-        //Lender needs to pay attention to this, because the owner of the PS will determine the recipient of the payment when it is liquidated and repaid later.
+        //Lenders have to be aware that the system will perform liquidation and repayment according to the owner of this PS
         _mint(_lender, loan.loanId);
         
         emit LoanStarted(
@@ -252,7 +252,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         address lender = ownerOf(_loanId);
         uint256 interestDue = (loan.repaymentAmount).sub(loan.loanPrincipalAmount);
 
-        uint256 adminFee = _computeAdminFee(interestDue, uint256(loan.loanAdminFeeInBasisPoints));
+        uint256 adminFee = _computeAdminFee(interestDue, uint256(loan.loanAdminFee));
         
         (address royaltyFeeRecipient, uint256 royaltyFeeAmount) = royaltyFeeManager.calculateRoyaltyFeeAndGetRecipient(loan.nftCollateralContractAndloanERC20[0], loan.nftCollateralId, interestDue);
 
@@ -267,7 +267,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         //Reduce the amount of ongoing loans in the protocol
         totalActiveLoans = totalActiveLoans.sub(1);
 
-        //協議費用收取與還款
+        //Transfer fee and return funds
         IERC20(loan.nftCollateralContractAndloanERC20[1]).transferFrom(loan.borrower, lender, payoffAmount);
         IERC20(loan.nftCollateralContractAndloanERC20[1]).transferFrom(loan.borrower, owner(), adminFee);
 
@@ -285,10 +285,10 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
             _loanId,
             loan.borrower,
             lender,
-            [loan.loanPrincipalAmount,loan.repaymentAmount],
+            [loan.loanPrincipalAmount, loan.repaymentAmount],
             loan.nftCollateralId,
-            [payoffAmount,adminFee,royaltyFeeAmount],
-            [loan.nftCollateralContractAndloanERC20[0],loan.nftCollateralContractAndloanERC20[1]]
+            [payoffAmount, adminFee, royaltyFeeAmount],
+            [loan.nftCollateralContractAndloanERC20[0], loan.nftCollateralContractAndloanERC20[1]]
         );
 
         delete loanIdToLoan[_loanId];
@@ -362,11 +362,10 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         maximumNumberOfActiveLoans = _newMaximumNumberOfActiveLoans;
     }
 
-
-    function updateAdminFee(uint256 _newAdminFeeInBasisPoints) external onlyOwner {
-        require(_newAdminFeeInBasisPoints <= 10000, 'By definition, basis points cannot exceed 10000');
-        adminFeeInBasisPoints = _newAdminFeeInBasisPoints;
-        emit AdminFeeUpdated(_newAdminFeeInBasisPoints);
+    function updateAdminFee(uint256 _newAdminFee) external onlyOwner {
+        require(_newAdminFee <= 10000, 'By definition, basis points cannot exceed 10000');
+        adminFee = _newAdminFee;
+        emit AdminFeeUpdated(_newAdminFee);
     }
 
     function updateRoyaltyFeeManager(address _royaltyFeeManager) external onlyOwner {
@@ -409,12 +408,12 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         }
     }
 
-     function isValidLenderSignature(
+    function isValidLenderSignature(
         uint256 _loanPrincipalAmount,
         uint256 _repaymentAmount,
         uint256 _nftCollateralId,
         uint256 _loanDuration,
-        uint256 _adminFeeInBasisPoints,
+        uint256 _adminFee,
         uint256 _lenderNonce,
         address[2] memory _nftCollateralContractAndloanERC20,
         address _lender,
@@ -431,7 +430,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
                 _repaymentAmount,
                 _nftCollateralId,
                 _loanDuration,
-                _adminFeeInBasisPoints,
+                _adminFee,
                 _lenderNonce,
                 _nftCollateralContractAndloanERC20[0],
                 _nftCollateralContractAndloanERC20[1],
@@ -453,12 +452,12 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         return _nonceOfSigning[_user][_nonce];
     }
 
-    function _computeAdminFee(uint256 _interestDue, uint256 _adminFeeInBasisPoints) internal pure returns (uint256) {
-    	return (_interestDue.mul(_adminFeeInBasisPoints)).div(10000);
+    function _computeAdminFee(uint256 _interestDue, uint256 _adminFee) internal pure returns (uint256) {
+    	return (_interestDue.mul(_adminFee)).div(10000);
     }
 
     function _transferNftToAddress(address _nftContract, uint256 _nftId, address _recipient) internal returns (bool) {
-        // 同意 ERC721 地址願意讓此合約進行轉移
+        // Agree that the ERC-721 contract is willing to let this contract transfer
         _nftContract.call(abi.encodeWithSelector(IERC721(_nftContract).approve.selector, address(this), _nftId));
 
         (bool success, ) = _nftContract.call(abi.encodeWithSelector(IERC721(_nftContract).transferFrom.selector, address(this), _recipient, _nftId));
