@@ -34,7 +34,7 @@ interface IRoyaltyFeeManager {
     ) external view returns (address, uint256);
 }
 
-//Mantle - P2P NFT Collateralized Contract, Part of the logic refers to the contract of https://nftfi.com/
+//Mantle Finance - NFT Collateralized P2P Lending Contract, Part of the logic refers to the contract of https://nftfi.com/
 contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
     using ECDSA for bytes32;
@@ -163,9 +163,9 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
 
         //Lending logic check
         require(maximumLoanDuration >= _loanDuration, 'The loan period must shorter than the protocol limit');
-        require(_repaymentAmount >= _loanPrincipalAmount, 'Protocol not to accept negative interest rate loan cases');
+        require(_repaymentAmount >= _loanPrincipalAmount, 'Protocol does not accept negative interest rate loan cases');
         require(_loanDuration >= 0, 'Loan duration needs to be set');
-        require(_adminFee == adminFee, 'The admin fee for signature authorization is different from the preset, and Lender needs to sign again');
+        require(_adminFee == adminFee, 'The admin fee in signature is different from the preset, and lender needs to sign again');
 
         //Nonce check
         require(_nonceOfSigning[msg.sender][_borrowerAndLenderNonces[0]] == false, 'Borrowers Nonce has been used. The order has been established, or Borrower has cancelled the Offer');
