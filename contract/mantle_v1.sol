@@ -237,6 +237,16 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
             loan.nftCollateralContractAndloanERC20[0],
             loan.nftCollateralContractAndloanERC20[1]
         );
+
+        emit NonceUsed(
+            msg.sender,
+            _borrowerAndLenderNonces[0]
+        );
+
+        emit NonceUsed(
+            _lender,
+            _borrowerAndLenderNonces[1]
+        );
     }
 
     function payBackLoan(uint256 _loanId) external nonReentrant {
