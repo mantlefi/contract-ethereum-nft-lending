@@ -41,7 +41,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
 
     //This contract complies with the ERC-721 standard, and Lender will get a Promissory Note NFT on each Loan begin. 
     //This NFT is also destroyed during repayment and liquidation.
-    //Note that transferring this PN means that you no longer have the rights to liquidate and repay.
+    //Note that transferring this PN means that you no longer have the rights to liquidate and get repayment.
     constructor() ERC721("Mantle Fianace Promissory Note", "Mantle PN") {
     }
 
@@ -62,13 +62,13 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     //Royalty Fee Manager, refers to the structure of https://looksrare.org/
     IRoyaltyFeeManager public royaltyFeeManager;
 
-    //The fees charged in the protocol, note: the fees are charged to Lender at the time of repayment. (25 = 0.25%, 100 = 1%)
+    //The fees charged from the protocol, note: the fees are charged to Lender at the time of repayment. (25 = 0.25%, 100 = 1%)
     uint256 public adminFee = 25;
 
     //The protocol uses its own Nonce to maintain security, avoid duplication of signatures and reduce gas costs
     mapping (address => mapping (uint256 => bool)) private _nonceOfSigning;
 
-    //other parameters
+    //Other parameters
     uint256 public maximumLoanDuration = 53 weeks;
     uint256 public maximumNumberOfActiveLoans = 100;
 
@@ -141,7 +141,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         uint256 amount
     );
 
-    //logical start
+    //Main function
    
     function beginLoan(
         uint256 _loanPrincipalAmount,
@@ -222,7 +222,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         _nonceOfSigning[_lender][_borrowerAndLenderNonces[1]] = true;
 
         //Mint Mantle Fianance 的 Promissory Note
-        //Lenders have to be aware that the system will perform liquidation and repayment according to the owner of this PS
+        //Lenders have to be aware that the system will perform liquidation and repayment according to the owner of this note
         _mint(_lender, loan.loanId);
         
         emit LoanStarted(
@@ -258,7 +258,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         Loan memory loan = loanIdToLoan[_loanId];
         require(msg.sender == loan.borrower, 'Only the borrower can pay back a loan and reclaim the underlying NFT');
 
-        //Take the final Lender of this Loan and repay
+        //Take the final lender of this Loan and repay
         address lender = ownerOf(_loanId);
         uint256 interestDue = (loan.repaymentAmount).sub(loan.loanPrincipalAmount);
 
@@ -320,7 +320,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         //Burn Mantle Finance Promissory Note
         _burn(_loanId);
 
-        //Take the final Lender of this Loan and liquidate nft
+        //Take the final lender of this Loan and liquidate nft
         address lender = ownerOf(_loanId);
 
         require(_transferNftToAddress(
@@ -462,6 +462,16 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         return _nonceOfSigning[_user][_nonce];
     }
 
+    function getChainID() public view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
+
+    //Internal
+
     function _computeAdminFee(uint256 _interestDue, uint256 _adminFee) internal pure returns (uint256) {
     	return (_interestDue.mul(_adminFee)).div(10000);
     }
@@ -474,13 +484,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         return success;
     }
 
-    function getChainID() public view returns (uint256) {
-        uint256 id;
-        assembly {
-            id := chainid()
-        }
-        return id;
-    }
+    //
 
     fallback() external payable {
         revert();
