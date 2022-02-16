@@ -262,7 +262,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         address lender = ownerOf(_loanId);
         uint256 interestDue = (loan.repaymentAmount).sub(loan.loanPrincipalAmount);
 
-        uint256 adminFee = _computeAdminFee(interestDue, uint256(loan.loanAdminFee));
+        uint256 adminFeePay = _computeAdminFee(interestDue, uint256(loan.loanAdminFee));
         
         (address royaltyFeeRecipient, uint256 royaltyFeeAmount) = royaltyFeeManager.calculateRoyaltyFeeAndGetRecipient(loan.nftCollateralContractAndloanERC20[0], loan.nftCollateralId, interestDue);
 
@@ -272,14 +272,14 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
             emit RoyaltyPayment(loan.nftCollateralContractAndloanERC20[0], loan.nftCollateralId, royaltyFeeRecipient, loan.nftCollateralContractAndloanERC20[1], royaltyFeeAmount);
         }
         
-        uint256 payoffAmount = ((loan.loanPrincipalAmount).add(interestDue)).sub(adminFee).sub(royaltyFeeAmount);
+        uint256 payoffAmount = ((loan.loanPrincipalAmount).add(interestDue)).sub(adminFeePay).sub(royaltyFeeAmount);
 
         //Reduce the amount of ongoing loans in the protocol
         totalActiveLoans = totalActiveLoans.sub(1);
 
         //Transfer fee and return funds
         IERC20(loan.nftCollateralContractAndloanERC20[1]).transferFrom(loan.borrower, lender, payoffAmount);
-        IERC20(loan.nftCollateralContractAndloanERC20[1]).transferFrom(loan.borrower, owner(), adminFee);
+        IERC20(loan.nftCollateralContractAndloanERC20[1]).transferFrom(loan.borrower, owner(), adminFeePay);
 
         //Burn Mantle Finance Promissory Note
         _burn(_loanId);
@@ -317,9 +317,6 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         //Reduce the amount of ongoing loans in the protocol
         totalActiveLoans = totalActiveLoans.sub(1);
 
-        //Burn Mantle Finance Promissory Note
-        _burn(_loanId);
-
         //Take the final lender of this Loan and liquidate nft
         address lender = ownerOf(_loanId);
 
@@ -328,6 +325,9 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
             loan.nftCollateralId,
             lender
         ), 'NFT was not successfully transferred');
+
+        //Burn Mantle Finance Promissory Note
+        _burn(_loanId);
 
         emit LoanLiquidated(
             _loanId,

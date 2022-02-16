@@ -109,7 +109,7 @@
 			},
 			{
 				"internalType": "uint256",
-				"name": "_adminFeeInBasisPoints",
+				"name": "_adminFee",
 				"type": "uint256"
 			},
 			{
@@ -144,19 +144,6 @@
 			}
 		],
 		"name": "beginLoan",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_nonce",
-				"type": "uint256"
-			}
-		],
-		"name": "cancelLoanCommitmentBeforeLoanHasBegun",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -538,6 +525,19 @@
 	{
 		"inputs": [
 			{
+				"internalType": "uint256",
+				"name": "_nonce",
+				"type": "uint256"
+			}
+		],
+		"name": "setNonceUsed",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "address",
 				"name": "_erc20",
 				"type": "address"
@@ -653,7 +653,7 @@
 		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "_newAdminFeeInBasisPoints",
+				"name": "_newAdminFee",
 				"type": "uint256"
 			}
 		],
@@ -703,7 +703,7 @@
 	},
 	{
 		"inputs": [],
-		"name": "adminFeeInBasisPoints",
+		"name": "adminFee",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -881,7 +881,7 @@
 			},
 			{
 				"internalType": "uint256",
-				"name": "_adminFeeInBasisPoints",
+				"name": "_adminFee",
 				"type": "uint256"
 			},
 			{
@@ -963,7 +963,7 @@
 			},
 			{
 				"internalType": "uint32",
-				"name": "loanAdminFeeInBasisPoints",
+				"name": "loanAdminFee",
 				"type": "uint32"
 			},
 			{
@@ -1176,7 +1176,7 @@
 				"type": "address"
 			}
 		],
-		"name": "whitelistForAllowNFT",
+		"name": "whitelistForAllowedERC20",
 		"outputs": [
 			{
 				"internalType": "bool",
@@ -1195,7 +1195,7 @@
 				"type": "address"
 			}
 		],
-		"name": "whitelistForLendERC20",
+		"name": "whitelistForAllowedNFT",
 		"outputs": [
 			{
 				"internalType": "bool",
