@@ -34,7 +34,7 @@ interface IRoyaltyFeeManager {
     ) external view returns (address, uint256);
 }
 
-//Mantle Finance - NFT Collateralized P2P Lending Contract, Part of the logic refers to the contract of https://nftfi.com/
+//Mantle Finance - NFT Collateralized P2P Lending Contract, Part of the logic refers to the contract of https://opensea.io/, https://nftfi.com/, https://looksrare.org/
 contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
     using ECDSA for bytes32;
@@ -534,13 +534,14 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         return keccak256(
             abi.encode(
                 _EIP_712_DOMAIN_TYPEHASH, // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
-                _NAME_HASH, // keccak256("Wyvern Exchange Contract")
-                _VERSION_HASH, // keccak256(bytes("2.3"))
+                _NAME_HASH, // keccak256("MantleFinanceV1")
+                _VERSION_HASH, // keccak256(bytes("1"))
                 chainId, // NOTE: this is fixed, need to use solidity 0.5+ or make external call to support!
                 address(this)
             )
         );
     }
+    
     /**
      * @dev Hash an order, returning the hash that a client must sign via EIP-712 including the message prefix
      * @param order Order to hash
