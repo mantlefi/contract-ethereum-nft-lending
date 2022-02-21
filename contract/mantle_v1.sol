@@ -39,10 +39,26 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     using SafeMath for uint256;
     using ECDSA for bytes32;
 
+    // NOTE: these hashes are derived and verified in the constructor.
+    // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+    bytes32 private constant _EIP_712_DOMAIN_TYPEHASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
+    // keccak256("MantleFinanceV1")
+    bytes32 private constant _NAME_HASH = 0x923549050e4e16c6737044320cf3ed6c05af533ca55d863ca8013766bbd195ec;
+    // keccak256(bytes("1"))
+    bytes32 private constant _VERSION_HASH = 0xc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc6;
+    bytes32 private constant _BORROWER_TYPEHASH = 0x107182850da2230853efed1dfd0ea3fd85b39a3b9b0a5381ea9fd5dba147aac0;
+    bytes32 private constant _LENDER_TYPEHASH = 0x1f0d56b2c9f2a40bbf20b01d1b8dcfe864e4dba64eb65c598bb0de477236473a;
+
+
     //This contract complies with the ERC-721 standard, and Lender will get a Promissory Note NFT on each Loan begin. 
-    //This NFT is also destroyed during repayment and liquidation.
-    //Note that transferring this PN means that you no longer have the rights to liquidate and get repayment.
+    //This NFT is also destroyed during repayment and claimed.
+    //Note that transferring this PN means that you no longer have the rights to claim and get repayment.
     constructor() ERC721("Mantle Fianace Promissory Note", "Mantle PN") {
+        require(keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)") == _EIP_712_DOMAIN_TYPEHASH, "_EIP_712_DOMAIN_TYPEHASH error");
+        require(keccak256(bytes("Mantle Fianace Promissory Note")) == _NAME_HASH, "_NAME_HASH error");
+        require(keccak256(bytes("1")) == _VERSION_HASH, "_VERSION_HASH error");
+        require(keccak256("BorrowerOrder(uint256 nftCollateralId,uint256 borrowerNonce,address nftCollateralContract,address borrower,uint256 expireTime,uint256 chainId)") == _BORROWER_TYPEHASH, "_BORROWER_TYPEHASH error");
+        require(keccak256("LenderOrder(uint256 loanPrincipalAmount,uint256 repaymentAmount,uint256 nftCollateralId,uint256 loanDuration,uint256 adminFee,uint256 lenderNonce,address nftCollateralContract,address loanERC20,address lender,uint256 expireTime,uint256 chainId)") == _LENDER_TYPEHASH, "_LENDER_TYPEHASH error");
     }
 
     //Whitelist of NFT projects and ERC-20 
@@ -54,10 +70,10 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     uint256 public totalActiveLoans = 0;
 
     //This is where the loans are actually stored in the protocol.
-    //Note that we separate whether the liquidation or repayment have been done. 
-    //The content of loanIdToLoan will be deleted during repayment and liquidation.
+    //Note that we separate whether the claimed or repayment have been done. 
+    //The content of loanIdToLoan will be deleted during repayment and claimed.
     mapping (uint256 => Loan) public loanIdToLoan;
-    mapping (uint256 => bool) public loanRepaidOrLiquidated;
+    mapping (uint256 => bool) public loanRepaidOrClaimed;
 
     //Royalty Fee Manager, refers to the structure of https://looksrare.org/
     IRoyaltyFeeManager public royaltyFeeManager;
@@ -84,6 +100,30 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         address borrower;
     }
 
+    struct BorrowerOrder {
+        uint256 nftCollateralId;
+        uint256 borrowerNonce;
+        address nftCollateralContract;
+        address borrower;
+        uint256 expireTime;
+        uint256 chainId;
+    }
+
+    struct LenderOrder {
+        uint256 loanPrincipalAmount;
+        uint256 repaymentAmount;
+        uint256 nftCollateralId;
+        uint256 loanDuration;
+        uint256 adminFee;
+        uint256 lenderNonce;
+        address nftCollateralContract;
+        address loanERC20;
+        address lender;
+        uint256 expireTime;
+        uint256 chainId;
+    }
+
+
     //Events
 
     event LoanStarted(
@@ -109,14 +149,14 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         address[2] nftCollateralContractAndloanERC20Denomination
     );
 
-    event LoanLiquidated(
+    event LoanClaimed(
         uint256 loanId,
         address borrower,
         address lender,
         uint256 loanPrincipalAmount,
         uint256 nftCollateralId,
         uint256 loanMaturityDate,
-        uint256 loanLiquidationDate,
+        uint256 loanClaimedDate,
         address nftCollateralContract
     );
 
@@ -222,7 +262,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         _nonceOfSigning[_lender][_borrowerAndLenderNonces[1]] = true;
 
         //Mint Mantle Fianance 的 Promissory Note
-        //Lenders have to be aware that the system will perform liquidation and repayment according to the owner of this note
+        //Lenders have to be aware that the system will perform claimed and repayment according to the owner of this note
         _mint(_lender, loan.loanId);
         
         emit LoanStarted(
@@ -250,9 +290,9 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     }
 
     function payBackLoan(uint256 _loanId) external nonReentrant {
-        //Check if the loan has been repaid, or liquidated
-        require(loanRepaidOrLiquidated[_loanId] == false, 'Loan has already been repaid or liquidated');
-        loanRepaidOrLiquidated[_loanId] = true;
+        //Check if the loan has been repaid, or claimed
+        require(loanRepaidOrClaimed[_loanId] == false, 'Loan has already been repaid or claimed');
+        loanRepaidOrClaimed[_loanId] = true;
 
         //Get detail in the loan
         Loan memory loan = loanIdToLoan[_loanId];
@@ -304,12 +344,12 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         delete loanIdToLoan[_loanId];
     }
 
-    function liquidateOverdueLoan(uint256 _loanId) external nonReentrant {
-        //Check if the loan has been repaid, or liquidated
-        require(loanRepaidOrLiquidated[_loanId] == false, 'Loan has already been repaid or liquidated');
-        loanRepaidOrLiquidated[_loanId] = true;
+    function claimOverdueLoan(uint256 _loanId) external nonReentrant {
+        //Check if the loan has been repaid, or claimeded
+        require(loanRepaidOrClaimed[_loanId] == false, 'Loan has already been repaid or claimed');
+        loanRepaidOrClaimed[_loanId] = true;
 
-        //Get detail in the loan and check if it's overdue and can be liquidated
+        //Get detail in the loan and check if it's overdue and can be claimed
         Loan memory loan = loanIdToLoan[_loanId];
         uint256 loanMaturityDate = (uint256(loan.loanStartTime)).add(uint256(loan.loanDuration));
         require(block.timestamp > loanMaturityDate, 'Loan is not overdue yet');
@@ -317,7 +357,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         //Reduce the amount of ongoing loans in the protocol
         totalActiveLoans = totalActiveLoans.sub(1);
 
-        //Take the final lender of this Loan and liquidate nft
+        //Take the final lender of this Loan and claim nft
         address lender = ownerOf(_loanId);
 
         require(_transferNftToAddress(
@@ -329,7 +369,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         //Burn Mantle Finance Promissory Note
         _burn(_loanId);
 
-        emit LoanLiquidated(
+        emit LoanClaimed(
             _loanId,
             loan.borrower,
             lender,
@@ -399,16 +439,16 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         } else {
             uint256 chainId;
             chainId = getChainID();
-            bytes32 message = keccak256(abi.encodePacked(
-                _nftCollateralId,
-                _borrowerNonce,
-                _nftCollateralContract,
-                _borrower,
-                _expireTime,
-                chainId
-            ));
+            BorrowerOrder memory order = BorrowerOrder({
+                nftCollateralId: _nftCollateralId,
+                borrowerNonce: _borrowerNonce,
+                nftCollateralContract: _nftCollateralContract,
+                borrower: _borrower,
+                expireTime: _expireTime,
+                chainId: chainId
+            });
 
-            bytes32 messageWithEthSignPrefix = message.toEthSignedMessageHash();
+            bytes32 messageWithEthSignPrefix = borrowerHashToSign(order);
 
             if(block.timestamp < _expireTime){
                 return (messageWithEthSignPrefix.recover(_borrowerSignature) == _borrower);
@@ -435,21 +475,21 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         } else {
             uint256 chainId;
             chainId = getChainID();
-            bytes32 message = keccak256(abi.encodePacked(
-                _loanPrincipalAmount,
-                _repaymentAmount,
-                _nftCollateralId,
-                _loanDuration,
-                _adminFee,
-                _lenderNonce,
-                _nftCollateralContractAndloanERC20[0],
-                _nftCollateralContractAndloanERC20[1],
-                _lender,
-                _expireTime,
-                chainId
-            ));
+            LenderOrder memory order = LenderOrder({
+                loanPrincipalAmount: _loanPrincipalAmount,
+                repaymentAmount: _repaymentAmount,
+                nftCollateralId: _nftCollateralId,
+                loanDuration: _loanDuration,
+                adminFee: _adminFee,
+                lenderNonce: _lenderNonce,
+                nftCollateralContract: _nftCollateralContractAndloanERC20[0],
+                loanERC20: _nftCollateralContractAndloanERC20[1],
+                lender: _lender,
+                expireTime: _expireTime,
+                chainId: chainId
+            });
 
-            bytes32 messageWithEthSignPrefix = message.toEthSignedMessageHash();
+            bytes32 messageWithEthSignPrefix = lenderHashToSign(order);
             if(block.timestamp < _expireTime){
                 return (messageWithEthSignPrefix.recover(_lenderSignature) == _lender);
             }else{
@@ -482,6 +522,48 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
 
         (bool success, ) = _nftContract.call(abi.encodeWithSelector(IERC721(_nftContract).transferFrom.selector, address(this), _recipient, _nftId));
         return success;
+    }
+
+    /**
+     * @dev Derive the domain separator for EIP-712 signatures.
+     * @return The domain separator.
+     */
+    function _deriveDomainSeparator() private view returns (bytes32) {
+        uint256 chainId;
+        chainId = getChainID();
+        return keccak256(
+            abi.encode(
+                _EIP_712_DOMAIN_TYPEHASH, // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+                _NAME_HASH, // keccak256("Wyvern Exchange Contract")
+                _VERSION_HASH, // keccak256(bytes("2.3"))
+                chainId, // NOTE: this is fixed, need to use solidity 0.5+ or make external call to support!
+                address(this)
+            )
+        );
+    }
+    /**
+     * @dev Hash an order, returning the hash that a client must sign via EIP-712 including the message prefix
+     * @param order Order to hash
+     * @return Hash of message prefix and order hash per Ethereum format
+     */
+    function borrowerHashToSign(BorrowerOrder memory order)
+        internal
+        view
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked("\x19\x01", _deriveDomainSeparator(), keccak256(abi.encode(_BORROWER_TYPEHASH,order))
+        ));
+    }
+    
+    function lenderHashToSign(LenderOrder memory order)
+        internal
+        view
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked("\x19\x01", _deriveDomainSeparator(), keccak256(abi.encode(_LENDER_TYPEHASH,order))
+        ));
     }
 
     //

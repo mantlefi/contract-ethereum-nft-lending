@@ -156,7 +156,7 @@
 				"type": "uint256"
 			}
 		],
-		"name": "liquidateOverdueLoan",
+		"name": "claimOverdueLoan",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -203,7 +203,7 @@
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "loanLiquidationDate",
+				"name": "loanClaimedDate",
 				"type": "uint256"
 			},
 			{
@@ -213,7 +213,7 @@
 				"type": "address"
 			}
 		],
-		"name": "LoanLiquidated",
+		"name": "LoanClaimed",
 		"type": "event"
 	},
 	{
@@ -983,7 +983,7 @@
 				"type": "uint256"
 			}
 		],
-		"name": "loanRepaidOrLiquidated",
+		"name": "loanRepaidOrClaimed",
 		"outputs": [
 			{
 				"internalType": "bool",

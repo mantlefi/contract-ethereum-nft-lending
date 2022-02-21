@@ -88,32 +88,36 @@
 			var WETHContract_rinkeby = "0xc778417E063141139Fce010982780140Aa0cD5Ab";
 
 			//NFTfi 合約地址: 0xF2eDd321D7346d30076527EDa3A82F4Cb272570e
-			var LendingPlaceContract_rinkeby = "0xA17B0C9da2D8406a37ce91da3aC7A25330E6db49";
+			var LendingPlaceContract_rinkeby = "0xc42F2453D0739354A45894473d70366D36a7bb94";
 
 			//測試 NFT 計畫的地址: 0xcC14dd8E6673fEE203366115D3f9240b079a4930
 			var NFT_Contract_rinkeby = "0xcC14dd8E6673fEE203366115D3f9240b079a4930";
 
 			//第幾號 NFT 要拿上來質押？
-			var NFT_Collateral_Id = 1640;
+			var NFT_Collateral_Id = 1641;
 
 			var chainId = 4;
 
-			var borrower_nonce = 321423312
+			var borrower_nonce = 43243256332
 
-			var lender_nonce = 13423142314
+			var lender_nonce = "43253621234"
 
-			var expireTime = 1654586024
+			var expireTime = 1655754431
 
 			var adminFee = 25
 
 
-			var lender = "0xeD46c44191c585c3044660c061dA6586EAa17325"
+			var lender = "0x9204DD8ea54438a9B991E8d5da81347BB437c0c5"
 
-			var borrower_sign = "0xed83bdd8c108e9584f215265b09b9cdc48804611bf026803d16a7eaad2ef70fa09deb048a4d5965f7f3a2b1cd27e175e30a06dd2c77ef397279fd60d03df7fde1b"
+			var borrower_sign = "0x19a6995868d73762b868a4e799f38a8de059a90b90d108e5480109026b10a4bd10980d3505347d5e2d555d4ddb5e591d5587727da191c893d9dc929ad6e4bf1c1c"
 
-			var lender_sign = "0x112102041de26995278aa88583930005e7115f99750cbde8e82430361e29749e11157d66bc30f4d748855d061773c3409f06c9aa3adacd159c2a584ba1eb18cd1b"
+			var lender_sign = "0x5f0e537a6de77672c59e79f4a732ef1d6d09795f677206c50a919eab342647054b574731c0928eaa47f30b9e432e6ba47482da85b559f085428dc710f4d0d2f21c"
 
-			var duration = 1
+			var duration = 2
+
+			var loanPrincipalAmount = '1'
+
+			var repaymentAmount = '1.05'
 			//--------------------
 
 
@@ -178,12 +182,77 @@
 
 			//_nftCollateralId, _borrowerNonce, _nftCollateralContract, _borrower, chainId
 			$scope.BorrowerSign = function () {
-				const keccak = web3.utils.soliditySha3({ t: 'uint256', v: $scope.NFT_Collateral_Id }, { t: 'uint256', v: borrower_nonce }, { t: 'address', v: $scope.NFT_Contract_rinkeby }, { t: 'address', v: $scope.address }, {t: "uint256", v: expireTime}, { t: 'uint256', v: 4 })
-				let Sig = web3.eth.personal.sign(keccak, $scope.address).then(function (a) {
-					console.log(a);
-					alert(a);
-					$scope.BorrowerSign_Result = a;
+				const msgParams = JSON.stringify({
+					domain: {
+						name: 'Mantle Fianace Promissory Note',
+						version: '1',
+						chainId: 4,
+						verifyingContract: '0xc42F2453D0739354A45894473d70366D36a7bb94',
+					},
+					message: {
+						nftCollateralId: NFT_Collateral_Id,
+						borrowerNonce: borrower_nonce,
+						nftCollateralContract: NFT_Contract_rinkeby,
+						borrower: $scope.address,
+						expireTime: expireTime,
+						chainId: chainId
+					},
+					primaryType: 'BorrowerOrder',
+					types: {
+						EIP712Domain: [
+							{ name: "name", type: "string" },
+							{ name: "version", type: "string" },
+							{ name: "chainId", type: "uint256" },
+							{ name: "verifyingContract", type: "address" },
+						],
+						BorrowerOrder: [
+							{ name: 'nftCollateralId', type: 'uint256' },
+							{ name: 'borrowerNonce', type: 'uint256' },
+							{ name: 'nftCollateralContract', type: 'address' },
+							{ name: 'borrower', type: 'address' },
+							{ name: 'expireTime', type: 'uint256' },
+							{ name: 'chainId', type: 'uint256' },
+						],
+
+					},
 				});
+
+				var from = $scope.address;
+
+
+				var params = [from, msgParams];
+				var method = 'eth_signTypedData_v4';
+
+				web3.currentProvider.sendAsync(
+					{
+						method,
+						params,
+						from,
+					},
+					function (err, result) {
+						if (err) return console.dir(err);
+						if (result.error) {
+							alert(result.error.message);
+						}
+						if (result.error) return console.error('ERROR', result);
+						console.log('TYPED SIGNED:' + JSON.stringify(result.result));
+
+						//   const recovered = sigUtil.recoverTypedSignature_v4({
+						//     data: JSON.parse(msgParams),
+						//     sig: result.result,
+						//   });
+
+						//   if (
+						//     ethUtil.toChecksumAddress(recovered) === ethUtil.toChecksumAddress(from)
+						//   ) {
+						//     alert('Successfully recovered signer as ' + from);
+						//   } else {
+						//     alert(
+						//       'Failed to verify signer when comparing ' + result + ' to ' + from
+						//     );
+						//   }
+					}
+				);
 			}
 
 			$scope.queryAllowanceAmount = function () {
@@ -211,14 +280,89 @@
 			//_interestIsProRated: true or false
 
 			$scope.LenderSign = function () {
-				const keccak = web3.utils.soliditySha3({ t: 'uint256', v: web3.utils.toWei('1', 'ether') }, { t: 'uint256', v: web3.utils.toWei('1.05', 'ether') }, { t: 'uint', v: $scope.NFT_Collateral_Id }, { t: 'uint256', v: duration }, { t: 'uint256', v: adminFee }, { t: 'uint256', v: lender_nonce }, { t: 'address', v: $scope.NFT_Contract_rinkeby }, { t: 'address', v: $scope.WETHContract_rinkeby }, { t: 'address', v: $scope.address }, {t: "uint256", v: expireTime}, { t: "uint256", v: 4 } )
+				const msgParams = JSON.stringify({
+					domain: {
+						name: 'Mantle Fianace Promissory Note',
+						version: '1',
+						chainId: 4,
+						verifyingContract: '0xc42F2453D0739354A45894473d70366D36a7bb94',
+					},
+					message: {
+						loanPrincipalAmount: web3.utils.toWei(loanPrincipalAmount, 'ether'),
+						repaymentAmount: web3.utils.toWei(repaymentAmount, 'ether'),
+						nftCollateralId: NFT_Collateral_Id,
+						loanDuration: duration,
+						adminFee: adminFee,
+						lenderNonce: lender_nonce,
+						nftCollateralContract: NFT_Contract_rinkeby,
+						loanERC20: WETHContract_rinkeby,
+						lender: lender,
+						expireTime: expireTime,
+						chainId: chainId
+					},
+					primaryType: 'LenderOrder',
+					types: {
+						EIP712Domain: [
+							{ name: "name", type: "string" },
+							{ name: "version", type: "string" },
+							{ name: "chainId", type: "uint256" },
+							{ name: "verifyingContract", type: "address" },
+						],
+						LenderOrder: [
+							{ name: 'loanPrincipalAmount', type: 'uint256' },
+							{ name: 'repaymentAmount', type: 'uint256' },
+							{ name: 'nftCollateralId', type: 'uint256' },
+							{ name: 'loanDuration', type: 'uint256' },
+							{ name: 'adminFee', type: 'uint256' },
+							{ name: 'lenderNonce', type: 'uint256' },
+							{ name: 'nftCollateralContract', type: 'address' },
+							{ name: 'loanERC20', type: 'address' },
+							{ name: 'lender', type: 'address' },
+							{ name: 'expireTime', type: 'uint256' },
+							{ name: 'chainId', type: 'uint256' },
+						],
 
-				let Sig = web3.eth.personal.sign(keccak, $scope.address).then(function (a) {
-					console.log(a);
-					alert(a);
-					$scope.LenderSign_Result = a;
+					},
 				});
+
+				var from = $scope.address;
+
+
+				var params = [from, msgParams];
+				var method = 'eth_signTypedData_v4';
+
+				web3.currentProvider.sendAsync(
+					{
+						method,
+						params,
+						from,
+					},
+					function (err, result) {
+						if (err) return console.dir(err);
+						if (result.error) {
+							alert(result.error.message);
+						}
+						if (result.error) return console.error('ERROR', result);
+						console.log('TYPED SIGNED:' + JSON.stringify(result.result));
+
+						//   const recovered = sigUtil.recoverTypedSignature_v4({
+						//     data: JSON.parse(msgParams),
+						//     sig: result.result,
+						//   });
+
+						//   if (
+						//     ethUtil.toChecksumAddress(recovered) === ethUtil.toChecksumAddress(from)
+						//   ) {
+						//     alert('Successfully recovered signer as ' + from);
+						//   } else {
+						//     alert(
+						//       'Failed to verify signer when comparing ' + result + ' to ' + from
+						//     );
+						//   }
+					}
+				);
 			}
+
 
 
 			//uint256 _loanPrincipalAmount,
@@ -235,7 +379,7 @@
 			//bytes memory _lenderSignature
 
 			$scope.beginLoan = function () {
-				LendingPlaceContract.methods.beginLoan(web3.utils.toWei('1', 'ether'), web3.utils.toWei('1.05', 'ether'), $scope.NFT_Collateral_Id, duration, adminFee, [borrower_nonce, lender_nonce], [$scope.NFT_Contract_rinkeby, $scope.WETHContract_rinkeby], lender, [expireTime,expireTime], borrower_sign, lender_sign).send({ from: $scope.address }, function (error, transactionHash) {
+				LendingPlaceContract.methods.beginLoan(web3.utils.toWei(loanPrincipalAmount, 'ether'), web3.utils.toWei(repaymentAmount, 'ether'), $scope.NFT_Collateral_Id, duration, adminFee, [borrower_nonce, lender_nonce], [$scope.NFT_Contract_rinkeby, $scope.WETHContract_rinkeby], lender, [expireTime, expireTime], borrower_sign, lender_sign).send({ from: $scope.address }, function (error, transactionHash) {
 
 				});
 			}
