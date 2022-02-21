@@ -184,7 +184,7 @@
 			$scope.BorrowerSign = function () {
 				const msgParams = JSON.stringify({
 					domain: {
-						name: 'Mantle Fianace Promissory Note',
+						name: 'MantleFinanceV1',
 						version: '1',
 						chainId: 4,
 						verifyingContract: '0xc42F2453D0739354A45894473d70366D36a7bb94',
@@ -237,20 +237,6 @@
 						if (result.error) return console.error('ERROR', result);
 						console.log('TYPED SIGNED:' + JSON.stringify(result.result));
 
-						//   const recovered = sigUtil.recoverTypedSignature_v4({
-						//     data: JSON.parse(msgParams),
-						//     sig: result.result,
-						//   });
-
-						//   if (
-						//     ethUtil.toChecksumAddress(recovered) === ethUtil.toChecksumAddress(from)
-						//   ) {
-						//     alert('Successfully recovered signer as ' + from);
-						//   } else {
-						//     alert(
-						//       'Failed to verify signer when comparing ' + result + ' to ' + from
-						//     );
-						//   }
 					}
 				);
 			}
@@ -282,7 +268,7 @@
 			$scope.LenderSign = function () {
 				const msgParams = JSON.stringify({
 					domain: {
-						name: 'Mantle Fianace Promissory Note',
+						name: 'MantleFinanceV1',
 						version: '1',
 						chainId: 4,
 						verifyingContract: '0xc42F2453D0739354A45894473d70366D36a7bb94',
@@ -343,7 +329,7 @@
 							alert(result.error.message);
 						}
 						if (result.error) return console.error('ERROR', result);
-						console.log('TYPED SIGNED:' + JSON.stringify(result.result));
+						console.log((result.result));
 
 						//   const recovered = sigUtil.recoverTypedSignature_v4({
 						//     data: JSON.parse(msgParams),
