@@ -43,7 +43,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     // keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
     bytes32 private constant _EIP_712_DOMAIN_TYPEHASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
     // keccak256("MantleFinanceV1")
-    bytes32 private constant _NAME_HASH = 0x923549050e4e16c6737044320cf3ed6c05af533ca55d863ca8013766bbd195ec;
+    bytes32 private constant _NAME_HASH = 0xaba6aa90b1d7c4077fcd4112d89757c977ec45dd567696446208806c35fa3fe3;
     // keccak256(bytes("1"))
     bytes32 private constant _VERSION_HASH = 0xc89efdaa54c0f20c7adf612882df0950f5a951637e0307cdcb4c672f298b8bc6;
     bytes32 private constant _BORROWER_TYPEHASH = 0x107182850da2230853efed1dfd0ea3fd85b39a3b9b0a5381ea9fd5dba147aac0;
@@ -55,7 +55,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     //Note that transferring this PN means that you no longer have the rights to claim and get repayment.
     constructor() ERC721("Mantle Fianace Promissory Note", "Mantle PN") {
         require(keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)") == _EIP_712_DOMAIN_TYPEHASH, "_EIP_712_DOMAIN_TYPEHASH error");
-        require(keccak256(bytes("Mantle Fianace Promissory Note")) == _NAME_HASH, "_NAME_HASH error");
+        require(keccak256(bytes("MantleFinanceV1")) == _NAME_HASH, "_NAME_HASH error");
         require(keccak256(bytes("1")) == _VERSION_HASH, "_VERSION_HASH error");
         require(keccak256("BorrowerOrder(uint256 nftCollateralId,uint256 borrowerNonce,address nftCollateralContract,address borrower,uint256 expireTime,uint256 chainId)") == _BORROWER_TYPEHASH, "_BORROWER_TYPEHASH error");
         require(keccak256("LenderOrder(uint256 loanPrincipalAmount,uint256 repaymentAmount,uint256 nftCollateralId,uint256 loanDuration,uint256 adminFee,uint256 lenderNonce,address nftCollateralContract,address loanERC20,address lender,uint256 expireTime,uint256 chainId)") == _LENDER_TYPEHASH, "_LENDER_TYPEHASH error");
