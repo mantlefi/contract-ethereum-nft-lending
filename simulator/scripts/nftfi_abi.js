@@ -68,6 +68,100 @@ var LendingPlaceContract_abi = [
 		"type": "event"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "approve",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_loanPrincipalAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_repaymentAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_nftCollateralId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_loanDuration",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_adminFee",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256[2]",
+				"name": "_borrowerAndLenderNonces",
+				"type": "uint256[2]"
+			},
+			{
+				"internalType": "address[2]",
+				"name": "_contract",
+				"type": "address[2]"
+			},
+			{
+				"internalType": "address",
+				"name": "_lender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256[2]",
+				"name": "_ExpireTime",
+				"type": "uint256[2]"
+			},
+			{
+				"internalType": "bytes",
+				"name": "_borrowerSignature",
+				"type": "bytes"
+			},
+			{
+				"internalType": "bytes",
+				"name": "_lenderSignature",
+				"type": "bytes"
+			}
+		],
+		"name": "beginLoan",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_loanId",
+				"type": "uint256"
+			}
+		],
+		"name": "claimOverdueLoan",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -242,6 +336,19 @@ var LendingPlaceContract_abi = [
 		"anonymous": false,
 		"inputs": [
 			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "royaltyFeeManager",
+				"type": "address"
+			}
+		],
+		"name": "NewRoyaltyFeeManager",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
 				"indexed": false,
 				"internalType": "address",
 				"name": "user",
@@ -290,6 +397,26 @@ var LendingPlaceContract_abi = [
 		"type": "event"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_loanId",
+				"type": "uint256"
+			}
+		],
+		"name": "payBackLoan",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -327,6 +454,124 @@ var LendingPlaceContract_abi = [
 		"type": "event"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "safeTransferFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bytes",
+				"name": "_data",
+				"type": "bytes"
+			}
+		],
+		"name": "safeTransferFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "operator",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "approved",
+				"type": "bool"
+			}
+		],
+		"name": "setApprovalForAll",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_nonce",
+				"type": "uint256"
+			}
+		],
+		"name": "setNonceUsed",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_erc20",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "_bool",
+				"type": "bool"
+			}
+		],
+		"name": "setWhitelistERC20",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_erc721",
+				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "_bool",
+				"type": "bool"
+			}
+		],
+		"name": "setWhitelistNFTContract",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -352,6 +597,42 @@ var LendingPlaceContract_abi = [
 		"type": "event"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tokenId",
+				"type": "uint256"
+			}
+		],
+		"name": "transferFrom",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -369,6 +650,58 @@ var LendingPlaceContract_abi = [
 		"type": "fallback"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_newAdminFee",
+				"type": "uint256"
+			}
+		],
+		"name": "updateAdminFee",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_newMaximumLoanDuration",
+				"type": "uint256"
+			}
+		],
+		"name": "updateMaximumLoanDuration",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_newMaximumNumberOfActiveLoans",
+				"type": "uint256"
+			}
+		],
+		"name": "updateMaximumNumberOfActiveLoans",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_royaltyFeeManager",
+				"type": "address"
+			}
+		],
+		"name": "updateRoyaltyFeeManager",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [],
 		"name": "adminFee",
 		"outputs": [
@@ -379,24 +712,6 @@ var LendingPlaceContract_abi = [
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "approve",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -416,82 +731,6 @@ var LendingPlaceContract_abi = [
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_loanPrincipalAmount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_repaymentAmount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_nftCollateralId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_loanDuration",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "_adminFee",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256[2]",
-				"name": "_borrowerAndLenderNonces",
-				"type": "uint256[2]"
-			},
-			{
-				"internalType": "address[2]",
-				"name": "_contract",
-				"type": "address[2]"
-			},
-			{
-				"internalType": "address",
-				"name": "_lender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256[2]",
-				"name": "_ExpireTime",
-				"type": "uint256[2]"
-			},
-			{
-				"internalType": "bytes",
-				"name": "_borrowerSignature",
-				"type": "bytes"
-			},
-			{
-				"internalType": "bytes",
-				"name": "_lenderSignature",
-				"type": "bytes"
-			}
-		],
-		"name": "beginLoan",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_loanId",
-				"type": "uint256"
-			}
-		],
-		"name": "claimOverdueLoan",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -840,26 +1079,6 @@ var LendingPlaceContract_abi = [
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_loanId",
-				"type": "uint256"
-			}
-		],
-		"name": "payBackLoan",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "royaltyFeeManager",
 		"outputs": [
@@ -870,124 +1089,6 @@ var LendingPlaceContract_abi = [
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "safeTransferFrom",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bytes",
-				"name": "_data",
-				"type": "bytes"
-			}
-		],
-		"name": "safeTransferFrom",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "operator",
-				"type": "address"
-			},
-			{
-				"internalType": "bool",
-				"name": "approved",
-				"type": "bool"
-			}
-		],
-		"name": "setApprovalForAll",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_nonce",
-				"type": "uint256"
-			}
-		],
-		"name": "setNonceUsed",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_erc20",
-				"type": "address"
-			},
-			{
-				"internalType": "bool",
-				"name": "_bool",
-				"type": "bool"
-			}
-		],
-		"name": "setWhitelistERC20",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_erc721",
-				"type": "address"
-			},
-			{
-				"internalType": "bool",
-				"name": "_bool",
-				"type": "bool"
-			}
-		],
-		"name": "setWhitelistNFTContract",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -1065,81 +1166,6 @@ var LendingPlaceContract_abi = [
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenId",
-				"type": "uint256"
-			}
-		],
-		"name": "transferFrom",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_newAdminFee",
-				"type": "uint256"
-			}
-		],
-		"name": "updateAdminFee",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_newMaximumLoanDuration",
-				"type": "uint256"
-			}
-		],
-		"name": "updateMaximumLoanDuration",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_newMaximumNumberOfActiveLoans",
-				"type": "uint256"
-			}
-		],
-		"name": "updateMaximumNumberOfActiveLoans",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{

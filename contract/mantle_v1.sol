@@ -49,8 +49,6 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     bytes32 private constant _BORROWER_TYPEHASH = 0x107182850da2230853efed1dfd0ea3fd85b39a3b9b0a5381ea9fd5dba147aac0;
     bytes32 private constant _LENDER_TYPEHASH = 0x1f0d56b2c9f2a40bbf20b01d1b8dcfe864e4dba64eb65c598bb0de477236473a;
 
-    //Royalty Fee Manager, refers to the structure of https://looksrare.org/
-    IRoyaltyFeeManager public royaltyFeeManager;
 
     //This contract complies with the ERC-721 standard, and Lender will get a Promissory Note NFT on each Loan begin. 
     //This NFT is also destroyed during repayment and claimed.
@@ -61,7 +59,6 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         require(keccak256(bytes("1")) == _VERSION_HASH, "_VERSION_HASH error");
         require(keccak256("BorrowerOrder(uint256 nftCollateralId,uint256 borrowerNonce,address nftCollateralContract,address borrower,uint256 expireTime,uint256 chainId)") == _BORROWER_TYPEHASH, "_BORROWER_TYPEHASH error");
         require(keccak256("LenderOrder(uint256 loanPrincipalAmount,uint256 repaymentAmount,uint256 nftCollateralId,uint256 loanDuration,uint256 adminFee,uint256 lenderNonce,address nftCollateralContract,address loanERC20,address lender,uint256 expireTime,uint256 chainId)") == _LENDER_TYPEHASH, "_LENDER_TYPEHASH error");
-        royaltyFeeManager = IRoyaltyFeeManager(0x11158766f6f446cDC15D8aAef34ba3f5a142aCFa);
     }
 
     //Whitelist of NFT projects and ERC-20 
@@ -77,6 +74,9 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     //The content of loanIdToLoan will be deleted during repayment and claimed.
     mapping (uint256 => Loan) public loanIdToLoan;
     mapping (uint256 => bool) public loanRepaidOrClaimed;
+
+    //Royalty Fee Manager, refers to the structure of https://looksrare.org/
+    IRoyaltyFeeManager public royaltyFeeManager;
 
     //The fees charged from the protocol, note: the fees are charged to Lender at the time of repayment. (25 = 0.25%, 100 = 1%)
     uint256 public adminFee = 25;
@@ -167,6 +167,10 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     event NonceUsed(
         address user,
         uint nonce
+    );
+
+    event NewRoyaltyFeeManager(
+        address indexed royaltyFeeManager
     );
 
     event RoyaltyPayment(
@@ -414,6 +418,11 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         emit AdminFeeUpdated(_newAdminFee);
     }
 
+    function updateRoyaltyFeeManager(address _royaltyFeeManager) external onlyOwner {
+        require(_royaltyFeeManager != address(0), "Owner: Cannot be null address");
+        royaltyFeeManager = IRoyaltyFeeManager(_royaltyFeeManager);
+        emit NewRoyaltyFeeManager(_royaltyFeeManager);
+    }
 
     //View
 
