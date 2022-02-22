@@ -36,6 +36,7 @@ interface IRoyaltyFeeManager {
 
 //Mantle Finance - NFT Collateralized P2P Lending Contract, Part of the logic refers to the contract of https://opensea.io/, https://nftfi.com/, https://looksrare.org/
 contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
+    using Strings for uint256;
     using SafeMath for uint256;
     using ECDSA for bytes32;
 
@@ -87,6 +88,8 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     //Other parameters
     uint256 public maximumLoanDuration = 53 weeks;
     uint256 public maximumNumberOfActiveLoans = 100;
+
+    string private _baseURIExtended;
 
     struct Loan {
         uint256 loanId;
@@ -567,7 +570,18 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         ));
     }
 
-    //
+    function setBaseURI(string memory baseURI_) external onlyOwner {
+        _baseURIExtended = baseURI_;
+    }
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _baseURIExtended;
+    }
+
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        require(_exists(tokenId), 'ERC721Metadata: URI query for nonexistent token');
+        return string(abi.encodePacked(_baseURI(), tokenId.toString()));
+    }
 
     fallback() external payable {
         revert();
