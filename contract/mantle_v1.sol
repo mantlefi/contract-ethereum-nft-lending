@@ -214,6 +214,10 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         require(_nonceOfSigning[msg.sender][_borrowerAndLenderNonces[0]] == false, 'Borrowers Nonce has been used. The order has been established, or Borrower has cancelled the Offer');
         require(_nonceOfSigning[_lender][_borrowerAndLenderNonces[1]] == false, 'Lenders Nonce has been used. The order has been established, or Lender has cancelled the listing');
 
+        //Set borrower and Lender's Nonce to use state
+        _nonceOfSigning[msg.sender][_borrowerAndLenderNonces[0]] = true;
+        _nonceOfSigning[_lender][_borrowerAndLenderNonces[1]] = true;
+
         Loan memory loan = Loan({
             loanId: totalNumLoans, //currentLoanId,
             loanPrincipalAmount: _loanPrincipalAmount,
@@ -259,10 +263,6 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         //Transfer fund and collateralized NFT to the protocol
         IERC721(loan.nftCollateralContractAndloanERC20[0]).transferFrom(msg.sender, address(this), loan.nftCollateralId);
         IERC20(loan.nftCollateralContractAndloanERC20[1]).transferFrom(_lender, msg.sender, loan.loanPrincipalAmount);
-
-        //Set borrower and Lender's Nonce to use state
-        _nonceOfSigning[msg.sender][_borrowerAndLenderNonces[0]] = true;
-        _nonceOfSigning[_lender][_borrowerAndLenderNonces[1]] = true;
 
         //Mint Mantle Fianance 的 Promissory Note
         //Lenders have to be aware that the system will perform claimed and repayment according to the owner of this note
