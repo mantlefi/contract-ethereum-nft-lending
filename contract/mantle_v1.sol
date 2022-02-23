@@ -583,6 +583,22 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
         return string(abi.encodePacked(_baseURI(), tokenId.toString()));
     }
 
+    /**
+     * @dev called by the owner to pause, triggers stopped state
+     */
+    function pause() public onlyOwner whenNotPaused {
+        _pause();
+        emit Paused(msg.sender);
+    }
+
+    /**
+     * @dev called by the owner to unpause, returns to normal state
+     */
+    function unpause() public onlyOwner whenPaused {
+        _unpause();
+        emit Unpaused(msg.sender);
+    }
+
     fallback() external payable {
         revert();
     }
