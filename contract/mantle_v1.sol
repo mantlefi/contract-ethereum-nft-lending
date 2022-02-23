@@ -80,7 +80,7 @@ contract MantleFinanceV1 is Ownable, ERC721, ReentrancyGuard, Pausable {
     IRoyaltyFeeManager public royaltyFeeManager;
 
     //The fees charged from the protocol, note: the fees are charged to Lender at the time of repayment. (25 = 0.25%, 100 = 1%)
-    uint256 public adminFee = 25;
+    uint256 public adminFee = 500;
 
     //The protocol uses its own Nonce to maintain security, avoid duplication of signatures and reduce gas costs
     mapping (address => mapping (uint256 => bool)) private _nonceOfSigning;
